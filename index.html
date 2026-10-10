@@ -1395,17 +1395,18 @@
 
     // 如果当前正在计时，且就是这道题，就暂停
     if (timerState.slug === slug) {
-      // 暂停，把本次用时写到笔记开头
+      // 暂停，把本次用时写到笔记开头（只保留最新一次）
       clearInterval(timerState.intervalId);
       var addSec = Math.floor((Date.now() - timerState.startTs) / 1000);
       var timeStr = formatTime(addSec);
       
-      // 自动加到笔记开头
+      // 先删掉旧的用时行，再加新的
       var noteText = r.n || "";
-      var timeLine = "⏱ 本次用时 " + timeStr + "\n";
-      if (!noteText.startsWith(timeLine)) {
-        r.n = timeLine + noteText;
-      }
+      // 匹配开头的"⏱ 本次用时 xx:xx\n"这一行，删掉
+      noteText = noteText.replace(/^⏱ 本次用时 \d+:\d+\n/, "");
+      // 加新的用时行到开头
+      r.n = "⏱ 本次用时 " + timeStr + "\n" + noteText;
+      
       r.t = Date.now();
       setP(slug, r);
       saveAllNow();
@@ -1429,10 +1430,9 @@
           var oldAddSec = Math.floor((Date.now() - timerState.startTs) / 1000);
           var oldTimeStr = formatTime(oldAddSec);
           var oldNoteText = oldR.n || "";
-          var oldTimeLine = "⏱ 本次用时 " + oldTimeStr + "\n";
-          if (!oldNoteText.startsWith(oldTimeLine)) {
-            oldR.n = oldTimeLine + oldNoteText;
-          }
+          // 删掉旧的用时行，加新的
+          oldNoteText = oldNoteText.replace(/^⏱ 本次用时 \d+:\d+\n/, "");
+          oldR.n = "⏱ 本次用时 " + oldTimeStr + "\n" + oldNoteText;
           oldR.t = Date.now();
           setP(timerState.slug, oldR);
           saveAllNow();
