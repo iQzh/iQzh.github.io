@@ -2603,6 +2603,7 @@
       ae.tagName === "SELECT" || ae.isContentEditable));
 
     if (e.key === "Escape") {
+      if (!els.gitSyncModal.hidden) { closeGitSyncModal(); return; }
       if (cmdkOpenState) { closeCmdk(); return; }
       if (!els.noteModal.hidden) { closeNoteModal(); return; }
       if (!els.helpModal.hidden) { closeHelp(); return; }
@@ -2612,6 +2613,9 @@
       if (view.cursor >= 0) { view.cursor = -1; paintCursor(); return; }
       return;
     }
+
+    // GitHub 同步弹窗打开时，屏蔽所有其他快捷键
+    if (!els.gitSyncModal.hidden) return;
 
     // Ctrl/Cmd+Z：撤销上一步数据改动（在输入框内保留浏览器的原生文本撤销）
     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
