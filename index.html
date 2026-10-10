@@ -1395,36 +1395,48 @@
 
     // 如果当前正在计时，且就是这道题，就暂停
     if (timerState.slug === slug) {
-      // 暂停，把时间加到累计
+      // 暂停，把本次用时写到笔记开头
       clearInterval(timerState.intervalId);
       var addSec = Math.floor((Date.now() - timerState.startTs) / 1000);
-      r.time = (Number(r.time) || 0) + addSec;
-      r.t = Date.now(); // 更新时间戳，触发同步
-      setP(slug, r); // 存回去！
+      var timeStr = formatTime(addSec);
+      
+      // 自动加到笔记开头
+      var noteText = r.n || "";
+      var timeLine = "⏱ 本次用时 " + timeStr + "\n";
+      if (!noteText.startsWith(timeLine)) {
+        r.n = timeLine + noteText;
+      }
+      r.t = Date.now();
+      setP(slug, r);
       saveAllNow();
-      addLog("计时结束", slug, "本次 " + formatTime(addSec));
+      addLog("计时结束", slug, "用时 " + timeStr);
       
       timerState.slug = null;
       timerState.intervalId = null;
       
-      btn.textContent = "开始计时";
-      display.textContent = "⏱ " + formatTime(r.time);
-      toast("计时结束，本次用时 " + formatTime(addSec));
+      btn.textContent = "计时";
+      // 重新渲染笔记
+      toggleNote(slug, true);
+      toggleNote(slug, false);
+      toast("已记录本次用时：" + timeStr + "（已写入笔记开头）");
     } else {
       // 如果之前在给其他题计时，先暂停之前的
       if (timerState.slug) {
         var oldRow = rowEl(timerState.slug);
         if (oldRow) {
           var oldBtn = oldRow.querySelector('[data-act="timerToggle"]');
-          var oldDisplay = oldRow.querySelector(".timer-display");
           var oldR = getP(timerState.slug);
           var oldAddSec = Math.floor((Date.now() - timerState.startTs) / 1000);
-          oldR.time = (Number(oldR.time) || 0) + oldAddSec;
+          var oldTimeStr = formatTime(oldAddSec);
+          var oldNoteText = oldR.n || "";
+          var oldTimeLine = "⏱ 本次用时 " + oldTimeStr + "\n";
+          if (!oldNoteText.startsWith(oldTimeLine)) {
+            oldR.n = oldTimeLine + oldNoteText;
+          }
           oldR.t = Date.now();
-          setP(timerState.slug, oldR); // 存回去！
+          setP(timerState.slug, oldR);
           saveAllNow();
-          if (oldBtn) oldBtn.textContent = "开始计时";
-          if (oldDisplay) oldDisplay.textContent = "⏱ " + formatTime(oldR.time);
+          if (oldBtn) oldBtn.textContent = "计时";
         }
         clearInterval(timerState.intervalId);
       }
@@ -1432,13 +1444,7 @@
       // 开始给这道题计时
       timerState.slug = slug;
       timerState.startTs = Date.now();
-      btn.textContent = "暂停计时";
-      
-      timerState.intervalId = setInterval(function() {
-        var elapsed = Math.floor((Date.now() - timerState.startTs) / 1000);
-        var total = (Number(r.time) || 0) + elapsed;
-        display.textContent = "⏱ " + formatTime(total);
-      }, 1000);
+      btn.textContent = "结束计时";
       
       addLog("计时开始", slug);
     }
@@ -2044,8 +2050,7 @@
             '<span class="nstat">' + r.n.length + " 字</span>" +
             '<span class="save-state"></span>' +
             '<span class="sp"></span>' +
-            '<span class="meta timer-display" title="累计做题时间">⏱ ' + formatTime(r.time || 0) + '</span>' +
-            '<button class="mini-btn timer-btn" data-act="timerToggle" title="开始/暂停计时">开始计时</button>' +
+            '<button class="mini-btn timer-btn" data-act="timerToggle" title="开始/暂停计时，结束后自动写入笔记开头">计时</button>' +
             '<span class="meta" title="最近一次打卡时间">' + escapeHtml(touch) + "</span>" +
             '<button class="mini-btn" data-act="zoomNote" title="在浮层里全屏编辑，左右分栏对照预览（Esc 关闭）">放大编辑</button>' +
             '<button class="mini-btn" data-act="tpl" title="插入思路/关键点/易错点/复杂度四段模板">模板</button>' +
