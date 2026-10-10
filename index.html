@@ -1061,10 +1061,16 @@
 
     <div class="git-status-row" id="gsStatus" hidden></div>
 
+    <div style="margin: 10px 0; padding: 10px 14px; background: var(--brand-soft); border-radius: 10px; font-size: 12.5px; color: var(--text-2); line-height: 1.7">
+      <b>换电脑不用重新输入！</b><br/>
+      配置好后点下面的按钮，生成一个带配置的链接，收藏它。以后在任何电脑打开这个链接，自动完成配置。
+    </div>
+
     <div class="modal-foot" style="display:flex; gap:8px; justify-content:space-between">
       <div style="display:flex; gap:8px">
         <button class="btn" id="gsDisconnect" hidden>断开连接</button>
         <button class="btn" id="gsSyncNow">立即同步</button>
+        <button class="btn" id="gsCopyLink">复制配置链接</button>
       </div>
       <div style="display:flex; gap:8px">
         <button class="btn" id="gsCancel">关闭</button>
@@ -1603,6 +1609,7 @@
     gsOwner: $("#gsOwner"), gsRepo: $("#gsRepo"), gsToken: $("#gsToken"), gsPath: $("#gsPath"),
     gsSave: $("#gsSave"), gsCancel: $("#gsCancel"), gsSyncNow: $("#gsSyncNow"),
     gsDisconnect: $("#gsDisconnect"), gsStatus: $("#gsStatus"), gsHelp: $("#gsHelp"),
+    gsCopyLink: $("#gsCopyLink"),
     btnGitStatus: $("#btnGitStatus")
   };
   var RING_LEN = 2 * Math.PI * 23.5;      // 统一信息区进度环（r=23.5）
@@ -3367,6 +3374,28 @@
 
     // GitHub 自动同步初始化
     loadGsConfig();
+
+    // 从 URL hash 读取配置（换电脑时用带配置的链接打开）
+    if (location.hash && location.hash.length > 1) {
+      try {
+        var params = new URLSearchParams(location.hash.slice(1));
+        var urlOwner = params.get("gsOwner");
+        var urlRepo = params.get("gsRepo");
+        var urlToken = params.get("gsToken");
+        var urlPath = params.get("gsPath");
+        if (urlOwner && urlRepo && urlToken) {
+          gsConfig.owner = urlOwner;
+          gsConfig.repo = urlRepo;
+          gsConfig.token = urlToken;
+          gsConfig.path = urlPath || "data.json";
+          saveGsConfig();
+          // 清除 URL hash，避免刷新重复读取
+          history.replaceState(null, "", location.pathname + location.search);
+          setTimeout(function () { toast("已从链接自动完成 GitHub 配置"); }, 500);
+        }
+      } catch (e) {}
+    }
+
     if (gsEnabled()) {
       els.btnGitStatus.hidden = false;
       gsPull().then(function () { renderAll(); });
@@ -3460,6 +3489,30 @@
     els.gsDisconnect.hidden = true;
     closeGitSyncModal();
     toast("已断开 GitHub 同步");
+  });
+
+  // 复制带配置的链接（换电脑用）
+  els.gsCopyLink.addEventListener("click", function () {
+    var owner = els.gsOwner.value.trim();
+    var repo = els.gsRepo.value.trim();
+    var token = els.gsToken.value.trim();
+    var path = els.gsPath.value.trim() || "data.json";
+    if (!owner || !repo || !token) { toast("请先填好用户名、仓库名和 Token", true); return; }
+
+    var params = new URLSearchParams();
+    params.set("gsOwner", owner);
+    params.set("gsRepo", repo);
+    params.set("gsToken", token);
+    params.set("gsPath", path);
+
+    var link = location.origin + location.pathname + "#" + params.toString();
+
+    // 复制到剪贴板
+    navigator.clipboard.writeText(link).then(function () {
+      toast("配置链接已复制！收藏它，以后换电脑打开这个链接就自动配置好了");
+    }).catch(function () {
+      prompt("复制下面这个链接并收藏：", link);
+    });
   });
 
   els.btnGitStatus.addEventListener("click", openGitSyncModal);
