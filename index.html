@@ -1433,6 +1433,12 @@
         meta.goal = clampGoal(remote.meta && remote.meta.goal);
         meta.updatedAt = remoteUpdated;
         meta.log = (remote.meta && remote.meta.log) || [];
+        // 同步标题副标题
+        if (remote.meta && remote.meta.brand) {
+          brand.title = remote.meta.brand.title || BRAND_DEF.title;
+          brand.sub = remote.meta.brand.sub || BRAND_DEF.sub;
+          saveBrand();
+        }
         saveAllNow();
         renderAll();
         toast("已从云端同步最新数据");
@@ -3099,6 +3105,8 @@
   }
   function saveBrand() {
     try { localStorage.setItem(K_BRAND, JSON.stringify(brand)); } catch (e) {}
+    meta.brand = { title: brand.title, sub: brand.sub };
+    saveAllNow();
   }
   function renderBrand() {
     els.brandTitle.textContent = brand.title;
