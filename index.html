@@ -1333,30 +1333,22 @@
   function persistMeta() { clearTimeout(tMeta); tMeta = setTimeout(saveMetaNow, 350); gsAutoPush(); }
   function saveAllNow() { saveProgressNow(); saveMetaNow(); }
 
-  /* ================= 2.5 GitHub 自动同步 ================= */
-  var K_GS = "leetcode-hot100-github-sync";
-  // 配置优先从外部 config.js 加载，默认空配置
-  var gsConfig = window.GIT_SYNC_CONFIG || { owner: "", repo: "", token: "", path: "data.json" };
-  var gsFileSha = null;           // 远程文件的 SHA，更新时必须带
+  /* ================= 2.5 Supabase 自动同步 ================= */
+  var K_GS = "leetcode-hot100-supabase-sync";
+  // Supabase 配置（写死在网页里，打开即自动同步）
+  var gsConfig = {
+    url: "https://nxyitbauypjjsicoicnm.supabase.co",
+    key: "sb_publishable_73rCAtmZN6p3CKnJd4sxyw_vYizaZih",
+    table: "sync_data",
+    rowId: 1
+  };
   var gsTimer = null;              // 自动推送防抖定时器
   var gsBusy = false;             // 是否正在同步中
   var gsLastSyncAt = 0;
 
-  function loadGsConfig() {
-    try {
-      var raw = localStorage.getItem(K_GS);
-      if (!raw) return;
-      var c = JSON.parse(raw);
-      gsConfig.owner = c.owner || "";
-      gsConfig.repo = c.repo || "";
-      gsConfig.token = c.token || "";
-      gsConfig.path = c.path || "data.json";
-    } catch (e) {}
-  }
-  function saveGsConfig() {
-    try { localStorage.setItem(K_GS, JSON.stringify(gsConfig)); } catch (e) {}
-  }
-  function gsEnabled() { return !!(gsConfig.owner && gsConfig.repo && gsConfig.token && gsConfig.path); }
+  function loadGsConfig() { /* Supabase 配置写死，不需要从 localStorage 读取 */ }
+  function saveGsConfig() { /* Supabase 配置写死，不需要保存到 localStorage */ }
+  function gsEnabled() { return !!(gsConfig.url && gsConfig.key && gsConfig.table); }
 
   function gsSetStatus(state, msg) {
     var btn = els.btnGitStatus;
@@ -1377,22 +1369,22 @@
     };
   }
 
-  // 从 GitHub 拉取数据并合并到本地
+  // 从 Supabase 拉取数据并合并到本地
   function gsPull() {
     if (!gsEnabled() || gsBusy) return Promise.resolve(false);
     gsBusy = true; gsSetStatus("syncing");
-    var url = "https://api.github.com/repos/" + gsConfig.owner + "/" + gsConfig.repo + "/contents/" + gsConfig.path;
+    var url = gsConfig.url + "/rest/v1/" + gsConfig.table + "?id=eq." + gsConfig.rowId + "&select=data";
     return fetch(url, {
-      headers: { "Authorization": "token " + gsConfig.token, "Accept": "application/vnd.github.v3+json" }
+      headers: {
+        "apikey": gsConfig.key,
+        "Authorization": "Bearer " + gsConfig.key
+      }
     }).then(function (r) {
-      if (r.status === 404) { gsFileSha = null; return null; } // 文件还不存在
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
-    }).then(function (data) {
-      if (!data) return null;
-      gsFileSha = data.sha;
-      var content = JSON.parse(atob(data.content));
-      return content;
+    }).then(function (rows) {
+      if (!rows || rows.length === 0) return null;
+      return rows[0].data;
     }).then(function (remote) {
       if (!remote || !remote.progress) { gsSetStatus("ok", "远端无数据，等待首次推送"); return true; }
       // 合并策略：按题取两者中更新的那条（比较打卡时间 t）
@@ -1420,50 +1412,43 @@
       if (changed > 0) {
         saveAllNow();
         renderAll();
-        toast("已从 GitHub 同步 " + changed + " 条更新");
+        toast("已从云端同步 " + changed + " 条更新");
       }
       gsLastSyncAt = Date.now();
       gsSetStatus("ok", new Date().toLocaleTimeString("zh-CN"));
       return true;
     }).catch(function (e) {
       gsSetStatus("err", e.message);
-      console.warn("[GitHub Sync] pull failed:", e);
+      console.warn("[Supabase Sync] pull failed:", e);
       return false;
     }).finally(function () { gsBusy = false; });
   }
 
-  // 推送本地数据到 GitHub
+  // 推送本地数据到 Supabase
   function gsPush() {
     if (!gsEnabled() || gsBusy) return Promise.resolve(false);
     gsBusy = true; gsSetStatus("syncing");
     var payload = gsBuildPayload();
-    var content = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    var url = "https://api.github.com/repos/" + gsConfig.owner + "/" + gsConfig.repo + "/contents/" + gsConfig.path;
-    var body = {
-      message: "auto-sync: " + new Date().toLocaleString("zh-CN"),
-      content: content
-    };
-    if (gsFileSha) body.sha = gsFileSha;
+    var url = gsConfig.url + "/rest/v1/" + gsConfig.table + "?id=eq." + gsConfig.rowId;
 
     return fetch(url, {
-      method: "PUT",
+      method: "PATCH",
       headers: {
-        "Authorization": "token " + gsConfig.token,
-        "Accept": "application/vnd.github.v3+json",
+        "apikey": gsConfig.key,
+        "Authorization": "Bearer " + gsConfig.key,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ data: payload })
     }).then(function (r) {
       if (!r.ok) return r.json().then(function (j) { throw new Error(j.message || ("HTTP " + r.status)); });
       return r.json();
-    }).then(function (data) {
-      gsFileSha = data.sha;
+    }).then(function () {
       gsLastSyncAt = Date.now();
       gsSetStatus("ok", new Date().toLocaleTimeString("zh-CN"));
       return true;
     }).catch(function (e) {
       gsSetStatus("err", e.message);
-      console.warn("[GitHub Sync] push failed:", e);
+      console.warn("[Supabase Sync] push failed:", e);
       return false;
     }).finally(function () { gsBusy = false; });
   }
