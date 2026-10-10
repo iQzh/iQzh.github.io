@@ -535,6 +535,8 @@
   .md-body a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
   .md-body strong { font-weight: 700; }
   .md-empty { color: var(--muted); }
+  .md-tag { display: inline-block; background: rgba(79,110,247,.12); color: var(--brand); border-radius: 5px; padding: 1px 7px; font-size: 12px; cursor: pointer; margin: 0 2px; }
+  .md-tag:hover { background: rgba(79,110,247,.22); }
 
   .empty { text-align: center; padding: 56px 20px; color: var(--muted);
     border: 1px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface); }
@@ -852,6 +854,10 @@
             </div>
           </div>
 
+          <div class="statsec-sub"><span>近 8 周刷题数量趋势</span></div>
+          <div id="weekChart" style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:8px 0;">
+          </div>
+
           <div class="statsec-sub"><span>知识点进度（点击任意一项可下钻筛选）</span></div>
           <div class="catbars" id="catBars"></div>
         </div>
@@ -896,6 +902,7 @@
         <option value="todo">未完成</option>
         <option value="done">已完成</option>
         <option value="star">待复习（收藏）</option>
+        <option value="review">间隔复习（久未复习）</option>
         <option value="noted">有笔记</option>
         <option value="checked">有打卡记录</option>
         <option value="untouched">从未打卡</option>
@@ -1767,6 +1774,8 @@
     // 5) 强调
     text = text.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
     text = text.replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    // 5.5) #标签 渲染成可点击的标签
+    text = text.replace(/(^|\s)#([\u4e00-\u9fa5\w]+)/g, '$1<span class="md-tag" data-tag="$2">#$2</span>');
 
     // 6) 逐行解析块级结构
     var out = [], para = [], listType = null;
@@ -1846,6 +1855,12 @@
     if (v.status === "noted" && !r.n.trim()) return false;
     if (v.status === "checked" && r.c <= 0) return false;
     if (v.status === "untouched" && r.c > 0) return false;
+    // 间隔复习：已完成，且超过3天没复习
+    if (v.status === "review") {
+      if (!r.d) return false; // 必须是已完成的
+      var daysSince = r.t ? (Date.now() - Number(r.t)) / (1000 * 60 * 60 * 24) : 999;
+      if (daysSince < 3) return false; // 3天内复习过的不算
+    }
     if (v.q) {
       var q = v.q.trim().toLowerCase();
       if (q) {
@@ -2113,6 +2128,39 @@
     els.goalInput.value = meta.goal;
     renderHeat();
     renderCatBars();
+    renderWeekChart();
+  }
+
+  // 渲染近 8 周刷题柱状图
+  function renderWeekChart() {
+    var el = document.getElementById("weekChart");
+    if (!el) return;
+    // 统计最近 8 周，每周的打卡次数
+    var weeks = [];
+    var now = new Date();
+    for (var i = 7; i >= 0; i--) {
+      var weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - i * 7 - now.getDay());
+      var weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      var total = 0;
+      Object.keys(meta.daily).forEach(function(dateStr) {
+        var d = new Date(dateStr);
+        if (d >= weekStart && d <= weekEnd) {
+          total += Number(meta.daily[dateStr]) || 0;
+        }
+      });
+      weeks.push({ label: (weekStart.getMonth()+1) + "/" + weekStart.getDate(), value: total });
+    }
+    var max = Math.max.apply(null, weeks.map(function(w) { return w.value; }));
+    if (max === 0) max = 1;
+    el.innerHTML = weeks.map(function(w) {
+      var h = Math.round(w.value / max * 60);
+      return '<div style="flex:1;text-align:center;">'
+        + '<div style="height:' + h + 'px;background:var(--brand);border-radius:3px 3px 0 0;opacity:.85;" title="' + w.value + ' 次"></div>'
+        + '<div style="font-size:10px;color:var(--muted);margin-top:4px;">' + w.label + '</div>'
+        + '</div>';
+    }).join('');
   }
 
   function renderBatchScope() {
@@ -2524,6 +2572,20 @@
     clearTimeout(debSearch);
     var v = els.search.value;
     debSearch = setTimeout(function () { view.q = v; view.cursor = -1; renderAll(); }, 140);
+  });
+
+  // 点击笔记里的 #标签，自动搜索
+  document.addEventListener("click", function (e) {
+    var tag = e.target.closest(".md-tag");
+    if (tag) {
+      e.preventDefault();
+      var q = tag.dataset.tag;
+      els.search.value = q;
+      view.q = q;
+      view.cursor = -1;
+      renderAll();
+      toast("已筛选标签：#" + q);
+    }
   });
   els.fStatus.addEventListener("change", function () { view.status = els.fStatus.value; view.cursor = -1; renderAll(); });
   els.fDiff.addEventListener("change", function () { view.diff = els.fDiff.value; view.cursor = -1; renderAll(); });
