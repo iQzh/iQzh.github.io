@@ -1436,12 +1436,13 @@
       headers: {
         "apikey": gsConfig.key,
         "Authorization": "Bearer " + gsConfig.key,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify({ data: payload })
     }).then(function (r) {
-      if (!r.ok) return r.json().then(function (j) { throw new Error(j.message || ("HTTP " + r.status)); });
-      return r.json();
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return true;
     }).then(function () {
       gsLastSyncAt = Date.now();
       gsSetStatus("ok", new Date().toLocaleTimeString("zh-CN"));
@@ -3501,7 +3502,8 @@
     });
   });
 
-  els.btnGitStatus.addEventListener("click", openGitSyncModal);
+  els.btnGitStatus.addEventListener("click", function() { gsPull().then(() => gsPush()); });
+  els.btnGitSync.hidden = true; // 隐藏 GitHub 同步设置菜单项
 })();
 </script>
 <script src="config.js"></script>
