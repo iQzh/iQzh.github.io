@@ -1432,6 +1432,7 @@
         meta.daily = (remote.meta && remote.meta.daily) || {};
         meta.goal = clampGoal(remote.meta && remote.meta.goal);
         meta.updatedAt = remoteUpdated;
+        meta.log = (remote.meta && remote.meta.log) || [];
         saveAllNow();
         renderAll();
         toast("已从云端同步最新数据");
