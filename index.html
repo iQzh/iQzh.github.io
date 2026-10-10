@@ -1537,8 +1537,9 @@
   function toggleDone(slug) {
     var p = getP(slug);
     p.d = !p.d;
+    p.t = Date.now(); // 不管标记完成还是取消完成，都更新时间戳，确保同步正确
     if (p.d && p.c === 0) {                    // 标记完成时自动补一次打卡，保持与旧版一致
-      p.c = 1; p.t = Date.now();
+      p.c = 1;
       var k = todayKey();
       meta.daily[k] = (Number(meta.daily[k]) || 0) + 1;
       persistMeta();
@@ -1549,6 +1550,7 @@
   function toggleStar(slug) {
     var p = getP(slug);
     p.s = !p.s;
+    p.t = Date.now(); // 更新时间戳，确保同步正确
     setP(slug, p);
     return p;
   }
