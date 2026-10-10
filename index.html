@@ -586,6 +586,37 @@
     margin: 16px 0 2px; }
   .ksec:first-child { margin-top: 0; }
 
+  /* ---------- GitHub 同步 ---------- */
+  .git-form { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+  .git-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .git-field span { font-weight: 600; color: var(--text-2); font-size: 12.5px; }
+  .git-field input {
+    border: 1px solid var(--border-strong); border-radius: 10px;
+    padding: 9px 12px; font-size: 13.5px; background: var(--surface-2);
+    color: var(--text); outline: none; transition: border-color .15s;
+  }
+  .git-field input:focus { border-color: var(--brand); }
+  .git-help {
+    background: var(--surface-3); border-radius: 10px; padding: 12px 14px;
+    font-size: 12.5px; line-height: 1.8; color: var(--text-2); margin: 12px 0;
+  }
+  .git-help code {
+    background: var(--brand-soft); color: var(--brand); padding: 1px 6px;
+    border-radius: 4px; font-size: 11.5px;
+  }
+  .git-status-row {
+    padding: 10px 14px; border-radius: 10px; font-size: 12.5px; margin: 10px 0;
+    background: var(--surface-3); color: var(--text-2);
+  }
+  .git-status-row.ok { background: color-mix(in srgb, var(--done) 15%, transparent); color: var(--done); }
+  .git-status-row.err { background: color-mix(in srgb, var(--hard) 12%, transparent); color: var(--hard); }
+  .btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .btn.primary:hover { opacity: .9; }
+  #btnGitStatus.syncing svg { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  #btnGitStatus.synced { color: var(--done); }
+  #btnGitStatus.error { color: var(--hard); }
+
   .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 24px);
     background: var(--text); color: var(--bg); font-size: 13px; font-weight: 550;
     padding: 10px 18px; border-radius: 999px; box-shadow: var(--shadow-lg);
@@ -821,6 +852,9 @@
           <div class="catbars" id="catBars"></div>
         </div>
       </div>
+      <button class="btn icon" id="btnGitStatus" title="GitHub 同步状态" aria-label="GitHub 同步" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 9 6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+      </button>
       <button class="btn icon" id="btnTheme" title="切换主题" aria-label="切换主题">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
@@ -832,6 +866,8 @@
           <button class="menu-item" id="btnExport"><span class="mi-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>备份（导出 JSON）</button>
           <button class="menu-item" id="btnImport"><span class="mi-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>从备份导入</button>
           <button class="menu-item" id="btnExportMd"><span class="mi-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>导出笔记为 Markdown</button>
+          <div class="menu-sep"></div>
+          <button class="menu-item" id="btnGitSync"><span class="mi-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 9 6.36"/><polyline points="21 3 21 9 15 9"/></svg></span>GitHub 同步设置</button>
           <div class="menu-sep"></div>
           <button class="menu-item" id="btnUndo"><span class="mi-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 1 0 2.1-5.4L3 10"/></svg></span>撤销上一步<span class="mi-k">Ctrl Z</span></button>
           <button class="menu-item" id="btnRename"><span class="mi-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>修改标题</button>
@@ -986,6 +1022,54 @@
     </div>
     <div class="modal-foot">
       <button class="btn" id="helpClose">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub 同步设置 -->
+<div class="modal-backdrop" id="gitSyncModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="GitHub 同步设置" style="max-width:480px">
+    <h2>GitHub 自动同步</h2>
+    <div class="m-sub">配置后，你的打卡进度和笔记会自动保存到 GitHub 仓库，换设备打开网页自动恢复。</div>
+
+    <div class="git-form">
+      <label class="git-field">
+        <span>GitHub 用户名</span>
+        <input type="text" id="gsOwner" placeholder="例如 iQzh" autocomplete="off" />
+      </label>
+      <label class="git-field">
+        <span>仓库名</span>
+        <input type="text" id="gsRepo" placeholder="例如 iQzh.github.io" autocomplete="off" />
+      </label>
+      <label class="git-field">
+        <span>Personal Access Token</span>
+        <input type="password" id="gsToken" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off" />
+      </label>
+      <label class="git-field">
+        <span>数据文件名</span>
+        <input type="text" id="gsPath" placeholder="data.json" autocomplete="off" value="data.json" />
+      </label>
+    </div>
+
+    <div class="git-help" id="gsHelp">
+      <b>怎么获取 Token？</b><br/>
+      1. 打开 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)<br/>
+      2. 点 "Generate new token (classic)"<br/>
+      3. 勾选 <code>repo</code> 权限，生成后复制粘贴到上面<br/>
+      <span style="color:var(--muted)">Token 只存在你浏览器本地，不会上传到任何第三方。</span>
+    </div>
+
+    <div class="git-status-row" id="gsStatus" hidden></div>
+
+    <div class="modal-foot" style="display:flex; gap:8px; justify-content:space-between">
+      <div style="display:flex; gap:8px">
+        <button class="btn" id="gsDisconnect" hidden>断开连接</button>
+        <button class="btn" id="gsSyncNow">立即同步</button>
+      </div>
+      <div style="display:flex; gap:8px">
+        <button class="btn" id="gsCancel">关闭</button>
+        <button class="btn primary" id="gsSave">保存设置</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1239,9 +1323,150 @@
   }
   function saveProgressNow() { clearTimeout(tProgress); tProgress = null; writeKey(K_PROGRESS, JSON.stringify(progress)); }
   function saveMetaNow() { clearTimeout(tMeta); tMeta = null; writeKey(K_META, JSON.stringify(meta)); }
-  function persistProgress() { clearTimeout(tProgress); tProgress = setTimeout(saveProgressNow, 350); }
-  function persistMeta() { clearTimeout(tMeta); tMeta = setTimeout(saveMetaNow, 350); }
+  function persistProgress() { clearTimeout(tProgress); tProgress = setTimeout(saveProgressNow, 350); gsAutoPush(); }
+  function persistMeta() { clearTimeout(tMeta); tMeta = setTimeout(saveMetaNow, 350); gsAutoPush(); }
   function saveAllNow() { saveProgressNow(); saveMetaNow(); }
+
+  /* ================= 2.5 GitHub 自动同步 ================= */
+  var K_GS = "leetcode-hot100-github-sync";
+  var gsConfig = { owner: "", repo: "", token: "", path: "data.json" };
+  var gsFileSha = null;           // 远程文件的 SHA，更新时必须带
+  var gsTimer = null;              // 自动推送防抖定时器
+  var gsBusy = false;             // 是否正在同步中
+  var gsLastSyncAt = 0;
+
+  function loadGsConfig() {
+    try {
+      var raw = localStorage.getItem(K_GS);
+      if (!raw) return;
+      var c = JSON.parse(raw);
+      gsConfig.owner = c.owner || "";
+      gsConfig.repo = c.repo || "";
+      gsConfig.token = c.token || "";
+      gsConfig.path = c.path || "data.json";
+    } catch (e) {}
+  }
+  function saveGsConfig() {
+    try { localStorage.setItem(K_GS, JSON.stringify(gsConfig)); } catch (e) {}
+  }
+  function gsEnabled() { return !!(gsConfig.owner && gsConfig.repo && gsConfig.token && gsConfig.path); }
+
+  function gsSetStatus(state, msg) {
+    var btn = els.btnGitStatus;
+    if (!btn) return;
+    btn.hidden = !gsEnabled();
+    btn.classList.remove("synced", "error", "syncing");
+    if (state === "syncing") { btn.classList.add("syncing"); btn.title = "正在同步到 GitHub…"; }
+    else if (state === "ok") { btn.classList.add("synced"); btn.title = "已同步：" + (msg || ""); }
+    else if (state === "err") { btn.classList.add("error"); btn.title = "同步失败：" + (msg || ""); }
+  }
+
+  function gsBuildPayload() {
+    return {
+      app: "leetcode-hot100", version: 2,
+      updatedAt: new Date().toISOString(),
+      progress: progress,
+      meta: { daily: meta.daily, goal: meta.goal }
+    };
+  }
+
+  // 从 GitHub 拉取数据并合并到本地
+  function gsPull() {
+    if (!gsEnabled() || gsBusy) return Promise.resolve(false);
+    gsBusy = true; gsSetStatus("syncing");
+    var url = "https://api.github.com/repos/" + gsConfig.owner + "/" + gsConfig.repo + "/contents/" + gsConfig.path;
+    return fetch(url, {
+      headers: { "Authorization": "token " + gsConfig.token, "Accept": "application/vnd.github.v3+json" }
+    }).then(function (r) {
+      if (r.status === 404) { gsFileSha = null; return null; } // 文件还不存在
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (data) {
+      if (!data) return null;
+      gsFileSha = data.sha;
+      var content = JSON.parse(atob(data.content));
+      return content;
+    }).then(function (remote) {
+      if (!remote || !remote.progress) { gsSetStatus("ok", "远端无数据，等待首次推送"); return true; }
+      // 合并策略：按题取两者中更新的那条（比较打卡时间 t）
+      var changed = 0;
+      Object.keys(remote.progress).forEach(function (slug) {
+        var rp = remote.progress[slug];
+        var lp = progress[slug];
+        if (!lp) { progress[slug] = rp; changed++; return; }
+        // 取最近更新的版本
+        if ((Number(rp.t) || 0) > (Number(lp.t) || 0)) {
+          progress[slug] = rp; changed++;
+        } else if ((Number(rp.t) || 0) === (Number(lp.t) || 0) && (rp.n || "").length > (lp.n || "").length) {
+          progress[slug] = rp; changed++;
+        }
+      });
+      // 合并 daily
+      if (remote.meta && remote.meta.daily) {
+        Object.keys(remote.meta.daily).forEach(function (k) {
+          var rv = Number(remote.meta.daily[k]) || 0;
+          var lv = Number(meta.daily[k]) || 0;
+          if (rv > lv) { meta.daily[k] = rv; }
+        });
+        if (remote.meta.goal) meta.goal = clampGoal(remote.meta.goal);
+      }
+      if (changed > 0) {
+        saveAllNow();
+        renderAll();
+        toast("已从 GitHub 同步 " + changed + " 条更新");
+      }
+      gsLastSyncAt = Date.now();
+      gsSetStatus("ok", new Date().toLocaleTimeString("zh-CN"));
+      return true;
+    }).catch(function (e) {
+      gsSetStatus("err", e.message);
+      console.warn("[GitHub Sync] pull failed:", e);
+      return false;
+    }).finally(function () { gsBusy = false; });
+  }
+
+  // 推送本地数据到 GitHub
+  function gsPush() {
+    if (!gsEnabled() || gsBusy) return Promise.resolve(false);
+    gsBusy = true; gsSetStatus("syncing");
+    var payload = gsBuildPayload();
+    var content = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    var url = "https://api.github.com/repos/" + gsConfig.owner + "/" + gsConfig.repo + "/contents/" + gsConfig.path;
+    var body = {
+      message: "auto-sync: " + new Date().toLocaleString("zh-CN"),
+      content: content
+    };
+    if (gsFileSha) body.sha = gsFileSha;
+
+    return fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": "token " + gsConfig.token,
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.message || ("HTTP " + r.status)); });
+      return r.json();
+    }).then(function (data) {
+      gsFileSha = data.sha;
+      gsLastSyncAt = Date.now();
+      gsSetStatus("ok", new Date().toLocaleTimeString("zh-CN"));
+      return true;
+    }).catch(function (e) {
+      gsSetStatus("err", e.message);
+      console.warn("[GitHub Sync] push failed:", e);
+      return false;
+    }).finally(function () { gsBusy = false; });
+  }
+
+  // 数据变化后自动防抖推送
+  function gsAutoPush() {
+    if (!gsEnabled()) return;
+    clearTimeout(gsTimer);
+    gsTimer = setTimeout(function () { gsPush(); }, 2000);
+  }
 
   function dateKey(d) {
     var m = String(d.getMonth() + 1), dd = String(d.getDate());
@@ -1373,7 +1598,12 @@
     fab: $("#fab"),
     brandBox: $("#brandBox"), brandTitle: $("#brandTitle"), brandSub: $("#brandSub"),
     btnCmdk: $("#btnCmdk"), cmdkModal: $("#cmdkModal"), cmdkInput: $("#cmdkInput"),
-    cmdkList: $("#cmdkList"), cmdkCount: $("#cmdkCount")
+    cmdkList: $("#cmdkList"), cmdkCount: $("#cmdkCount"),
+    btnGitSync: $("#btnGitSync"), gitSyncModal: $("#gitSyncModal"),
+    gsOwner: $("#gsOwner"), gsRepo: $("#gsRepo"), gsToken: $("#gsToken"), gsPath: $("#gsPath"),
+    gsSave: $("#gsSave"), gsCancel: $("#gsCancel"), gsSyncNow: $("#gsSyncNow"),
+    gsDisconnect: $("#gsDisconnect"), gsStatus: $("#gsStatus"), gsHelp: $("#gsHelp"),
+    btnGitStatus: $("#btnGitStatus")
   };
   var RING_LEN = 2 * Math.PI * 23.5;      // 统一信息区进度环（r=23.5）
 
@@ -3131,6 +3361,13 @@
     syncStickyTop();
     onScroll();
 
+    // GitHub 自动同步初始化
+    loadGsConfig();
+    if (gsEnabled()) {
+      els.btnGitStatus.hidden = false;
+      gsPull().then(function () { renderAll(); });
+    }
+
     if (corruptFound) {
       toast("检测到本地数据损坏，已重置为可用状态并保留原始副本", true);
     }
@@ -3146,6 +3383,82 @@
     view.q = ""; view.cat = "all"; view.status = "all"; view.diff = "all"; view.sort = "default";
     readHash(); applyViewToControls(); view.cursor = -1; renderAll();
   });
+
+  /* ================= GitHub 同步弹窗事件 ================= */
+  function openGitSyncModal() {
+    els.gsOwner.value = gsConfig.owner;
+    els.gsRepo.value = gsConfig.repo;
+    els.gsToken.value = gsConfig.token;
+    els.gsPath.value = gsConfig.path || "data.json";
+    els.gsDisconnect.hidden = !gsEnabled();
+    els.gsStatus.hidden = true;
+    els.gitSyncModal.hidden = false;
+  }
+  function closeGitSyncModal() { els.gitSyncModal.hidden = true; }
+
+  els.btnGitSync.addEventListener("click", function () {
+    els.moreMenu.hidden = true;
+    els.btnMore.setAttribute("aria-expanded", "false");
+    openGitSyncModal();
+  });
+  els.gitSyncModal.addEventListener("click", function (e) { if (e.target === els.gitSyncModal) closeGitSyncModal(); });
+  els.gsCancel.addEventListener("click", closeGitSyncModal);
+
+  els.gsSave.addEventListener("click", function () {
+    gsConfig.owner = els.gsOwner.value.trim();
+    gsConfig.repo = els.gsRepo.value.trim();
+    gsConfig.token = els.gsToken.value.trim();
+    gsConfig.path = els.gsPath.value.trim() || "data.json";
+    saveGsConfig();
+    if (gsEnabled()) {
+      els.btnGitStatus.hidden = false;
+      els.gsStatus.hidden = false;
+      els.gsStatus.className = "git-status-row";
+      els.gsStatus.textContent = "配置已保存，正在连接 GitHub…";
+      gsPull().then(function (ok) {
+        if (ok) {
+          els.gsStatus.className = "git-status-row ok";
+          els.gsStatus.textContent = "连接成功！数据已同步，以后会自动保存。";
+          els.gsDisconnect.hidden = false;
+          renderAll();
+        } else {
+          els.gsStatus.className = "git-status-row err";
+          els.gsStatus.textContent = "连接失败，请检查用户名、仓库名和 Token 是否正确。";
+        }
+      });
+    } else {
+      els.btnGitStatus.hidden = true;
+      closeGitSyncModal();
+    }
+  });
+
+  els.gsSyncNow.addEventListener("click", function () {
+    els.gsStatus.hidden = false;
+    els.gsStatus.className = "git-status-row";
+    els.gsStatus.textContent = "正在同步…";
+    gsPush().then(function (ok) {
+      if (ok) {
+        els.gsStatus.className = "git-status-row ok";
+        els.gsStatus.textContent = "同步完成：" + new Date().toLocaleTimeString("zh-CN");
+      } else {
+        els.gsStatus.className = "git-status-row err";
+        els.gsStatus.textContent = "同步失败，请检查网络或 Token。";
+      }
+    });
+  });
+
+  els.gsDisconnect.addEventListener("click", function () {
+    if (!confirm("确定断开 GitHub 同步吗？断开后数据只保存在本机浏览器。")) return;
+    gsConfig = { owner: "", repo: "", token: "", path: "data.json" };
+    gsFileSha = null;
+    saveGsConfig();
+    els.btnGitStatus.hidden = true;
+    els.gsDisconnect.hidden = true;
+    closeGitSyncModal();
+    toast("已断开 GitHub 同步");
+  });
+
+  els.btnGitStatus.addEventListener("click", openGitSyncModal);
 })();
 </script>
 </body>
