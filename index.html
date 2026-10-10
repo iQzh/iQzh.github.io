@@ -1331,7 +1331,7 @@
   function saveMetaNow() { clearTimeout(tMeta); tMeta = null; writeKey(K_META, JSON.stringify(meta)); }
   function persistProgress() { clearTimeout(tProgress); tProgress = setTimeout(saveProgressNow, 350); gsAutoPush(); }
   function persistMeta() { clearTimeout(tMeta); tMeta = setTimeout(saveMetaNow, 350); gsAutoPush(); }
-  function saveAllNow() { saveProgressNow(); saveMetaNow(); gsAutoPush(); }
+  function saveAllNow() { saveProgressNow(); saveMetaNow(); meta.updatedAt = Date.now(); gsAutoPush(); }
 
   /* ================= 2.5 Supabase 自动同步 ================= */
   var K_GS = "leetcode-hot100-supabase-sync";
@@ -1391,30 +1391,25 @@
         gsPush(); // 云端没数据，自动推送本地数据上去
         return true;
       }
-      // 合并策略：按题取两者中更新的那条（比较打卡时间 t）
-      var changed = 0;
-      Object.keys(remote.progress).forEach(function (slug) {
-        var rp = remote.progress[slug];
-        var lp = progress[slug];
-        if (!lp) { progress[slug] = rp; changed++; return; }
-        // 取最近更新的版本
-        if ((Number(rp.t) || 0) > (Number(lp.t) || 0)) {
-          progress[slug] = rp; changed++;
-        } else if ((Number(rp.t) || 0) === (Number(lp.t) || 0) && (rp.n || "").length > (lp.n || "").length) {
-          progress[slug] = rp; changed++;
-        }
-      });
-      // 合并 meta：按更新时间取最新的整个 meta
-      if (remote.meta && (Number(remote.meta.updatedAt) || 0) > (Number(meta.updatedAt) || 0)) {
-        meta.daily = remote.meta.daily || {};
-        meta.goal = clampGoal(remote.meta.goal);
-        meta.updatedAt = remote.meta.updatedAt;
-      }
-      if (changed > 0) {
+      // 最后写入胜出：比较整体更新时间，谁新就用谁
+      var localUpdated = Number(meta.updatedAt) || 0;
+      var remoteUpdated = Number(remote.meta && remote.meta.updatedAt) || 0;
+      
+      if (remoteUpdated > localUpdated) {
+        // 云端更新，直接覆盖本地
+        progress = remote.progress || {};
+        meta.daily = (remote.meta && remote.meta.daily) || {};
+        meta.goal = clampGoal(remote.meta && remote.meta.goal);
+        meta.updatedAt = remoteUpdated;
         saveAllNow();
         renderAll();
-        toast("已从云端同步 " + changed + " 条更新");
+        toast("已从云端同步最新数据");
+      } else if (localUpdated > remoteUpdated) {
+        // 本地更新，推送到云端
+        gsPush();
       }
+      // 一样新就不操作
+      
       gsLastSyncAt = Date.now();
       gsSetStatus("ok", new Date().toLocaleTimeString("zh-CN"));
       return true;
