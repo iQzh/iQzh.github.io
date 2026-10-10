@@ -1331,7 +1331,7 @@
   function saveMetaNow() { clearTimeout(tMeta); tMeta = null; writeKey(K_META, JSON.stringify(meta)); }
   function persistProgress() { clearTimeout(tProgress); tProgress = setTimeout(saveProgressNow, 350); gsAutoPush(); }
   function persistMeta() { clearTimeout(tMeta); tMeta = setTimeout(saveMetaNow, 350); gsAutoPush(); }
-  function saveAllNow() { saveProgressNow(); saveMetaNow(); }
+  function saveAllNow() { saveProgressNow(); saveMetaNow(); gsAutoPush(); }
 
   /* ================= 2.5 Supabase 自动同步 ================= */
   var K_GS = "leetcode-hot100-supabase-sync";
