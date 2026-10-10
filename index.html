@@ -1400,6 +1400,7 @@
       var addSec = Math.floor((Date.now() - timerState.startTs) / 1000);
       r.time = (Number(r.time) || 0) + addSec;
       r.t = Date.now(); // 更新时间戳，触发同步
+      setP(slug, r); // 存回去！
       saveAllNow();
       addLog("计时结束", slug, "本次 " + formatTime(addSec));
       
@@ -1420,6 +1421,7 @@
           var oldAddSec = Math.floor((Date.now() - timerState.startTs) / 1000);
           oldR.time = (Number(oldR.time) || 0) + oldAddSec;
           oldR.t = Date.now();
+          setP(timerState.slug, oldR); // 存回去！
           saveAllNow();
           if (oldBtn) oldBtn.textContent = "开始计时";
           if (oldDisplay) oldDisplay.textContent = "⏱ " + formatTime(oldR.time);
@@ -1608,7 +1610,8 @@
       d: !!p.d,
       s: !!p.s,
       t: (typeof p.t === "number" && p.t > 0) ? Math.floor(p.t) : 0,
-      n: (typeof p.n === "string") ? p.n : ""
+      n: (typeof p.n === "string") ? p.n : "",
+      time: (typeof p.time === "number" && p.time > 0) ? Math.floor(p.time) : 0
     };
   }
   function setP(slug, p) {
@@ -1616,10 +1619,11 @@
     var d = !!p.d, s = !!p.s;
     var n = (typeof p.n === "string") ? (p.n.length > NOTE_MAX ? p.n.slice(0, NOTE_MAX) : p.n) : "";
     var t = (typeof p.t === "number" && p.t > 0) ? Math.floor(p.t) : 0;
+    var time = (typeof p.time === "number" && p.time > 0) ? Math.floor(p.time) : 0;
 
     // 不要删除记录！否则双向同步时无法区分"从未存在"和"用户删除了"，
     // 会导致删除操作被云端旧数据覆盖。保留空记录，同步时会正确更新。
-    progress[slug] = { c: c, d: d, s: s, t: t, n: n };
+    progress[slug] = { c: c, d: d, s: s, t: t, n: n, time: time };
     persistProgress();
   }
   // 打卡：次数变化并同步当日热力图记录
