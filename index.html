@@ -483,11 +483,10 @@
   .ibtn.open .nb-dot, .ibtn.has.open .nb-dot { display: none; }
   .ibtn.star-btn.on .nb-dot { display: none; }
 
-  .note-preview { display: flex; align-items: center; gap: 8px; cursor: pointer;
+  .note-preview { display: flex; align-items: center; gap: 8px;
     padding: 0 16px 11px 62px; margin-top: -3px; font-size: 12.5px; color: var(--muted); }
   .note-preview svg { flex: none; opacity: .7; }
   .note-preview .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .note-preview:hover .txt { color: var(--text-2); }
 
   .note-box { padding: 2px 16px 14px 62px; animation: slideDown .22s cubic-bezier(.4,0,.2,1); }
   .note-inner { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden;
@@ -2035,7 +2034,7 @@
         '<span class="col-note">' + starHTML(p.slug, r.s) + noteBtnHTML(p.slug, open) + "</span>" +
       "</div>" +
       (has && !open
-        ? '<div class="note-preview" data-act="note">' +
+        ? '<div class="note-preview">' +
             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
             '<span class="txt">' + preview + "</span></div>"
         : "") +
@@ -2312,7 +2311,6 @@
     var flat = text.replace(/\s+/g, " ").trim();
     var div = document.createElement("div");
     div.className = "note-preview";
-    div.setAttribute("data-act", "note");
     div.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
       '<span class="txt">' + escapeHtml(flat.length > 96 ? flat.slice(0, 96) + "…" : flat) + "</span>";
     return div;
