@@ -1335,8 +1335,8 @@
 
   /* ================= 2.5 GitHub 自动同步 ================= */
   var K_GS = "leetcode-hot100-github-sync";
-  // 默认配置（写死在网页里，打开即自动同步）
-  var gsConfig = { owner: "iQzh", repo: "iQzh.github.io", token: "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", path: "data.json" };
+  // 配置优先从外部 config.js 加载（window.GIT_SYNC_CONFIG），方便单独更新
+  var gsConfig = window.GIT_SYNC_CONFIG || { owner: "", repo: "", token: "", path: "data.json" };
   var gsFileSha = null;           // 远程文件的 SHA，更新时必须带
   var gsTimer = null;              // 自动推送防抖定时器
   var gsBusy = false;             // 是否正在同步中
@@ -3519,5 +3519,6 @@
   els.btnGitStatus.addEventListener("click", openGitSyncModal);
 })();
 </script>
+<script src="config.js"></script>
 </body>
 </html>
