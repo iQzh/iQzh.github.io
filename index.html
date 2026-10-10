@@ -1371,6 +1371,77 @@
     if (meta.log.length > 100) meta.log = meta.log.slice(0, 100);
   }
 
+  // 格式化时间：秒 -> mm:ss
+  function formatTime(seconds) {
+    seconds = Math.floor(seconds);
+    var m = Math.floor(seconds / 60);
+    var s = seconds % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  // 计时器状态
+  var timerState = {
+    slug: null,
+    startTs: 0,
+    intervalId: null,
+    elapsed: 0
+  };
+
+  // 切换计时器：开始/暂停
+  function toggleTimer(slug, row) {
+    var r = getP(slug);
+    var btn = row.querySelector('[data-act="timerToggle"]');
+    var display = row.querySelector(".timer-display");
+
+    // 如果当前正在计时，且就是这道题，就暂停
+    if (timerState.slug === slug) {
+      // 暂停，把时间加到累计
+      clearInterval(timerState.intervalId);
+      var addSec = Math.floor((Date.now() - timerState.startTs) / 1000);
+      r.time = (Number(r.time) || 0) + addSec;
+      r.t = Date.now(); // 更新时间戳，触发同步
+      saveAllNow();
+      addLog("计时结束", slug, "本次 " + formatTime(addSec));
+      
+      timerState.slug = null;
+      timerState.intervalId = null;
+      
+      btn.textContent = "开始计时";
+      display.textContent = "⏱ " + formatTime(r.time);
+      toast("计时结束，本次用时 " + formatTime(addSec));
+    } else {
+      // 如果之前在给其他题计时，先暂停之前的
+      if (timerState.slug) {
+        var oldRow = rowEl(timerState.slug);
+        if (oldRow) {
+          var oldBtn = oldRow.querySelector('[data-act="timerToggle"]');
+          var oldDisplay = oldRow.querySelector(".timer-display");
+          var oldR = getP(timerState.slug);
+          var oldAddSec = Math.floor((Date.now() - timerState.startTs) / 1000);
+          oldR.time = (Number(oldR.time) || 0) + oldAddSec;
+          oldR.t = Date.now();
+          saveAllNow();
+          if (oldBtn) oldBtn.textContent = "开始计时";
+          if (oldDisplay) oldDisplay.textContent = "⏱ " + formatTime(oldR.time);
+        }
+        clearInterval(timerState.intervalId);
+      }
+      
+      // 开始给这道题计时
+      timerState.slug = slug;
+      timerState.startTs = Date.now();
+      btn.textContent = "暂停计时";
+      
+      timerState.intervalId = setInterval(function() {
+        var elapsed = Math.floor((Date.now() - timerState.startTs) / 1000);
+        var total = (Number(r.time) || 0) + elapsed;
+        display.textContent = "⏱ " + formatTime(total);
+      }, 1000);
+      
+      addLog("计时开始", slug);
+    }
+  }
+
   /* ================= 2.5 Supabase 自动同步 ================= */
   var K_GS = "leetcode-hot100-supabase-sync";
   // Supabase 配置（写死在网页里，打开即自动同步）
@@ -1969,6 +2040,8 @@
             '<span class="nstat">' + r.n.length + " 字</span>" +
             '<span class="save-state"></span>' +
             '<span class="sp"></span>' +
+            '<span class="meta timer-display" title="累计做题时间">⏱ ' + formatTime(r.time || 0) + '</span>' +
+            '<button class="mini-btn timer-btn" data-act="timerToggle" title="开始/暂停计时">开始计时</button>' +
             '<span class="meta" title="最近一次打卡时间">' + escapeHtml(touch) + "</span>" +
             '<button class="mini-btn" data-act="zoomNote" title="在浮层里全屏编辑，左右分栏对照预览（Esc 关闭）">放大编辑</button>' +
             '<button class="mini-btn" data-act="tpl" title="插入思路/关键点/易错点/复杂度四段模板">模板</button>' +
@@ -2540,6 +2613,8 @@
       if (!matchesCurrentView(slug)) renderList();
     } else if (act === "closeNote") {
       toggleNote(slug, true);
+    } else if (act === "timerToggle") {
+      toggleTimer(slug, row);
     }
   });
 
