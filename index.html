@@ -792,6 +792,10 @@
           <span class="lbl">学习统计</span>
           <span class="pct-chip" id="statsPct">0%</span>
         </button>
+        <button class="btn" id="btnLog" title="操作日志：记录每次操作" aria-label="操作日志" aria-haspopup="true" aria-expanded="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="lbl">日志</span>
+        </button>
         <div class="stats-pop" id="statsPanel" hidden>
           <div class="sp-arrow"></div>
           <div class="sp-head">
@@ -1022,6 +1026,20 @@
     </div>
     <div class="modal-foot">
       <button class="btn" id="helpClose">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- 操作日志 -->
+<div class="modal-backdrop" id="logModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="操作日志" style="max-width:520px">
+    <h2>操作日志</h2>
+    <div class="m-sub">最近 100 条操作记录，按时间倒序排列</div>
+    <div id="logList" style="max-height:400px;overflow-y:auto;margin:16px 0;">
+      <div style="text-align:center;color:var(--text-dim);padding:40px 0;">暂无记录</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="logClose">关闭</button>
     </div>
   </div>
 </div>
@@ -1280,7 +1298,7 @@
   var K_BRAND = "leetcode-hot100-brand-v1";
 
   var progress = {};                              // slug -> {c,d,n,s,t}
-  var meta = { daily: {}, goal: 3, updatedAt: 0 };  // daily: 'YYYY-MM-DD' -> 次数, updatedAt: 最后更新时间
+  var meta = { daily: {}, goal: 3, updatedAt: 0, log: [] };  // daily: 'YYYY-MM-DD' -> 次数, updatedAt: 最后更新时间, log: 操作日志
   var storageWarned = false;
   var tProgress = null, tMeta = null;
 
@@ -1333,6 +1351,19 @@
   function persistMeta() { clearTimeout(tMeta); tMeta = setTimeout(saveMetaNow, 350); gsAutoPush(); }
   function saveAllNow() { saveProgressNow(); saveMetaNow(); meta.updatedAt = Date.now(); gsAutoPush(); }
 
+  // 记录操作日志
+  function addLog(action, slug, extra) {
+    if (!meta.log) meta.log = [];
+    meta.log.unshift({
+      t: Date.now(),
+      action: action,
+      title: slug ? titleOf(slug) : "",
+      extra: extra || ""
+    });
+    // 最多保留最近 100 条
+    if (meta.log.length > 100) meta.log = meta.log.slice(0, 100);
+  }
+
   /* ================= 2.5 Supabase 自动同步 ================= */
   var K_GS = "leetcode-hot100-supabase-sync";
   // Supabase 配置（写死在网页里，打开即自动同步）
@@ -1365,7 +1396,7 @@
       app: "leetcode-hot100", version: 2,
       updatedAt: new Date().toISOString(),
       progress: progress,
-      meta: { daily: meta.daily, goal: meta.goal, updatedAt: meta.updatedAt }
+      meta: { daily: meta.daily, goal: meta.goal, updatedAt: meta.updatedAt, log: meta.log || [] }
     };
   }
 
@@ -1584,6 +1615,7 @@
     stBest: $("#stBest"), stTotal: $("#stTotal"), stActive: $("#stActive"),
     goalInput: $("#goalInput"), batchScope: $("#batchScope"),
     helpModal: $("#helpModal"), importFile: $("#importFile"),
+    logModal: $("#logModal"), logList: $("#logList"), logClose: $("#logClose"), btnLog: $("#btnLog"),
     btnReset: $("#btnReset"), btnExport: $("#btnExport"), btnExportMd: $("#btnExportMd"),
     btnImport: $("#btnImport"), btnTheme: $("#btnTheme"), btnNext: $("#btnNext"),
     btnRandom: $("#btnRandom"), btnBatch: $("#btnBatch"),
@@ -2392,6 +2424,7 @@
 
     if (act === "inc") {
       pushUndo("打卡 +1：「" + titleOf(slug) + "」");
+      addLog("打卡 +1", slug);
       doCheckin(slug, 1); refreshRow(slug);
       var c = row.querySelector(".counter");
       c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump");
@@ -2400,17 +2433,20 @@
     } else if (act === "dec") {
       if (r.c <= 0) return;
       pushUndo("打卡 −1：「" + titleOf(slug) + "」");
+      addLog("打卡 -1", slug);
       doCheckin(slug, -1); refreshRow(slug);
       renderKPIs(); renderChips(); renderStatsPanel();
       if (!matchesCurrentView(slug)) renderList();
     } else if (act === "toggle") {
       pushUndo((r.d ? "取消完成：「" : "标记完成：「") + titleOf(slug) + "」");
+      addLog(r.d ? "取消完成" : "标记完成", slug);
       var p2 = toggleDone(slug); refreshRow(slug);
       renderKPIs(); renderChips(); renderStatsPanel();
       toast(p2.d ? "🎉 已完成「" + titleOf(slug) + "」" : "已取消完成「" + titleOf(slug) + "」");
       if (!matchesCurrentView(slug)) renderList();
     } else if (act === "star") {
       pushUndo((r.s ? "取消收藏：「" : "加入待复习：「") + titleOf(slug) + "」");
+      addLog(r.s ? "取消收藏" : "收藏", slug);
       var p3 = toggleStar(slug); refreshRow(slug);
       toast(p3.s ? "★ 已加入待复习「" + titleOf(slug) + "」" : "已移出待复习「" + titleOf(slug) + "」");
       renderKPIs(); renderStatsPanel();
@@ -2429,6 +2465,7 @@
       var next = cur.trim() ? (cur.replace(/\s+$/, "") + "\n\n" + NOTE_TPL) : NOTE_TPL;
       if (next.length > NOTE_MAX) next = next.slice(0, NOTE_MAX);
       pushUndo("插入笔记模板：「" + titleOf(slug) + "」");
+      addLog("插入笔记模板", slug);
       noteSession = null;                       // 避免与「编辑会话」重复记录一步
       ta2.value = next;
       onNoteInput(ta2);
@@ -2439,6 +2476,7 @@
       var ta3 = row.querySelector(".note-input");
       if (!getP(slug).n.trim()) { toast("这道题还没有笔记"); return; }
       pushUndo("清空笔记：「" + titleOf(slug) + "」");
+      addLog("清空笔记", slug);
       noteSession = null;
       ta3.value = "";
       onNoteInput(ta3);
@@ -2559,9 +2597,34 @@
 
   function openHelp() { els.helpModal.hidden = false; }
   function closeHelp() { els.helpModal.hidden = true; }
+
+  // 操作日志
+  function renderLogList() {
+    var log = meta.log || [];
+    if (!log.length) {
+      els.logList.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px 0;">暂无记录</div>';
+      return;
+    }
+    var html = log.map(function(item) {
+      var d = new Date(item.t);
+      var time = d.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">'
+        + '<div><span style="color:var(--text-dim);margin-right:12px;">' + time + '</span>'
+        + '<span style="font-weight:500;">' + item.action + '</span>'
+        + (item.title ? '：' + item.title : '')
+        + '</div></div>';
+    }).join('');
+    els.logList.innerHTML = html;
+  }
+  function openLog() { renderLogList(); els.logModal.hidden = false; }
+  function closeLog() { els.logModal.hidden = true; }
   els.btnHelp.addEventListener("click", openHelp);
   $("#helpClose").addEventListener("click", closeHelp);
   els.helpModal.addEventListener("click", function (e) { if (e.target === els.helpModal) closeHelp(); });
+
+  els.btnLog.addEventListener("click", function (e) { e.stopPropagation(); openLog(); });
+  els.logClose.addEventListener("click", closeLog);
+  els.logModal.addEventListener("click", function (e) { if (e.target === els.logModal) closeLog(); });
 
   // 统计已改为顶栏浮层：此处直接展开面板
   function scrollToStats() { openStats(); }
