@@ -1509,8 +1509,9 @@
     var n = (typeof p.n === "string") ? (p.n.length > NOTE_MAX ? p.n.slice(0, NOTE_MAX) : p.n) : "";
     var t = (typeof p.t === "number" && p.t > 0) ? Math.floor(p.t) : 0;
 
-    if (c === 0 && !d && !s && !n.trim()) delete progress[slug];
-    else progress[slug] = { c: c, d: d, s: s, t: t, n: n };
+    // 不要删除记录！否则双向同步时无法区分"从未存在"和"用户删除了"，
+    // 会导致删除操作被云端旧数据覆盖。保留空记录，同步时会正确更新。
+    progress[slug] = { c: c, d: d, s: s, t: t, n: n };
     persistProgress();
   }
   // 打卡：次数变化并同步当日热力图记录
