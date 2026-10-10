@@ -1280,7 +1280,7 @@
   var K_BRAND = "leetcode-hot100-brand-v1";
 
   var progress = {};                              // slug -> {c,d,n,s,t}
-  var meta = { daily: {}, goal: 3 };              // daily: 'YYYY-MM-DD' -> 次数
+  var meta = { daily: {}, goal: 3, updatedAt: 0 };  // daily: 'YYYY-MM-DD' -> 次数, updatedAt: 最后更新时间
   var storageWarned = false;
   var tProgress = null, tMeta = null;
 
@@ -1404,14 +1404,11 @@
           progress[slug] = rp; changed++;
         }
       });
-      // 合并 daily
-      if (remote.meta && remote.meta.daily) {
-        Object.keys(remote.meta.daily).forEach(function (k) {
-          var rv = Number(remote.meta.daily[k]) || 0;
-          var lv = Number(meta.daily[k]) || 0;
-          if (rv > lv) { meta.daily[k] = rv; }
-        });
-        if (remote.meta.goal) meta.goal = clampGoal(remote.meta.goal);
+      // 合并 meta：按更新时间取最新的整个 meta
+      if (remote.meta && (Number(remote.meta.updatedAt) || 0) > (Number(meta.updatedAt) || 0)) {
+        meta.daily = remote.meta.daily || {};
+        meta.goal = clampGoal(remote.meta.goal);
+        meta.updatedAt = remote.meta.updatedAt;
       }
       if (changed > 0) {
         saveAllNow();
@@ -1523,6 +1520,7 @@
 
     if (delta > 0) {
       meta.daily[k] = (Number(meta.daily[k]) || 0) + delta;
+      meta.updatedAt = Date.now();
       persistMeta();
       p.t = Date.now();
     } else if (delta < 0) {
@@ -1531,6 +1529,7 @@
       if (tKey === k && Number(meta.daily[k]) > 0) {
         meta.daily[k] = Number(meta.daily[k]) - 1;
         if (meta.daily[k] <= 0) delete meta.daily[k];
+        meta.updatedAt = Date.now();
         persistMeta();
       }
       if (next === 0) {
@@ -2355,6 +2354,7 @@
       if (changed) r.t = Date.now(); // 所有批量操作都更新时间戳，确保同步正确
       setP(p.slug, r);
     });
+    meta.updatedAt = Date.now(); // 批量操作后更新 meta 时间戳
     saveAllNow();
     renderAll();
     toast("批量操作完成：" + list.length + " 道题");
@@ -2555,6 +2555,7 @@
   });
   els.goalInput.addEventListener("change", function () {
     meta.goal = clampGoal(els.goalInput.value);
+    meta.updatedAt = Date.now();
     els.goalInput.value = meta.goal;
     saveMetaNow();
     renderStatsPanel();
@@ -2859,6 +2860,7 @@
         });
       }
       if (parsed.goal) meta.goal = clampGoal(parsed.goal);
+      meta.updatedAt = Date.now(); // 导入后更新 meta 时间戳
 
       saveAllNow();
       renderAll();
@@ -2872,7 +2874,7 @@
     if (!confirm("确定清空全部打卡记录、笔记与统计数据吗？\n建议先点顶部「备份」导出 JSON。")) return;
     if (!confirm("再次确认：真的要清空所有数据？（误操作可用 Ctrl+Z 撤销）")) return;
     pushUndo("重置全部数据");
-    progress = {}; expanded = {}; meta = { daily: {}, goal: meta.goal };
+    progress = {}; expanded = {}; meta = { daily: {}, goal: meta.goal, updatedAt: Date.now() };
     saveAllNow();
     renderAll();
     toast("已重置全部数据（Ctrl+Z 可撤销）");
