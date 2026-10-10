@@ -1386,7 +1386,11 @@
       if (!rows || rows.length === 0) return null;
       return rows[0].data;
     }).then(function (remote) {
-      if (!remote || !remote.progress) { gsSetStatus("ok", "远端无数据，等待首次推送"); return true; }
+      if (!remote || !remote.progress) {
+        gsSetStatus("ok", "云端无数据，推送本地...");
+        gsPush(); // 云端没数据，自动推送本地数据上去
+        return true;
+      }
       // 合并策略：按题取两者中更新的那条（比较打卡时间 t）
       var changed = 0;
       Object.keys(remote.progress).forEach(function (slug) {
@@ -1657,6 +1661,7 @@
     saveAllNow();
     renderAll();
     syncUndoBtn();
+    gsPush(); // 撤销后强制推送，确保同步正确
     toast("已撤销：" + top.label);
     return true;
   }
@@ -2332,17 +2337,20 @@
     var k = todayKey();
     list.forEach(function (p) {
       var r = getP(p.slug);
+      var changed = false;
       if (kind === "done") {
         if (!r.d) {
           r.d = true;
-          if (r.c === 0) { r.c = 1; r.t = Date.now(); meta.daily[k] = (Number(meta.daily[k]) || 0) + 1; }
+          changed = true;
+          if (r.c === 0) { r.c = 1; meta.daily[k] = (Number(meta.daily[k]) || 0) + 1; }
         }
-      } else if (kind === "undone") { r.d = false; }
-      else if (kind === "inc") { r.c += 1; r.t = Date.now(); meta.daily[k] = (Number(meta.daily[k]) || 0) + 1; }
-      else if (kind === "resetCount") { r.c = 0; }
-      else if (kind === "star") { r.s = true; }
-      else if (kind === "unstar") { r.s = false; }
-      else if (kind === "clearNotes") { r.n = ""; if (expanded[p.slug]) delete expanded[p.slug]; }
+      } else if (kind === "undone") { r.d = false; changed = true; }
+      else if (kind === "inc") { r.c += 1; meta.daily[k] = (Number(meta.daily[k]) || 0) + 1; changed = true; }
+      else if (kind === "resetCount") { r.c = 0; changed = true; }
+      else if (kind === "star") { if (!r.s) { r.s = true; changed = true; } }
+      else if (kind === "unstar") { if (r.s) { r.s = false; changed = true; } }
+      else if (kind === "clearNotes") { if (r.n) { r.n = ""; changed = true; if (expanded[p.slug]) delete expanded[p.slug]; } }
+      if (changed) r.t = Date.now(); // 所有批量操作都更新时间戳，确保同步正确
       setP(p.slug, r);
     });
     saveAllNow();
