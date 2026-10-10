@@ -1,8 +1,8 @@
 // GitHub 同步配置
-// 以后改 Token 只需要更新这个文件，不用改整个 HTML
+// 不要在这里填 Token！Token 存在你本地浏览器里，通过配置链接同步
 window.GIT_SYNC_CONFIG = {
   owner: "iQzh",
   repo: "iQzh.github.io",
-  token: "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",
+  token: "",
   path: "data.json"
 };

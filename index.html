@@ -1335,7 +1335,7 @@
 
   /* ================= 2.5 GitHub 自动同步 ================= */
   var K_GS = "leetcode-hot100-github-sync";
-  // 配置优先从外部 config.js 加载（window.GIT_SYNC_CONFIG），方便单独更新
+  // 配置优先从外部 config.js 加载，默认空配置
   var gsConfig = window.GIT_SYNC_CONFIG || { owner: "", repo: "", token: "", path: "data.json" };
   var gsFileSha = null;           // 远程文件的 SHA，更新时必须带
   var gsTimer = null;              // 自动推送防抖定时器
