@@ -1528,7 +1528,11 @@
         if (meta.daily[k] <= 0) delete meta.daily[k];
         persistMeta();
       }
-      if (next === 0) p.t = 0;
+      if (next === 0) {
+        p.t = 0;
+      } else {
+        p.t = Date.now(); // 减次数也更新时间戳，确保同步正确
+      }
     }
     p.c = next;
     setP(slug, p);
@@ -2247,6 +2251,7 @@
     var val = ta.value;
     var truncated = val.length > NOTE_MAX;
     r.n = truncated ? val.slice(0, NOTE_MAX) : val;
+    r.t = Date.now(); // 更新时间戳，确保同步正确
     setP(slug, r);
 
     var box = row.querySelector(".note-box");
